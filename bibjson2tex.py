@@ -11,6 +11,41 @@ import codecs
 import os
 from csv import reader
 
+REPLACEMENT_MAP = {
+        u"δ" : "$\delta$",
+        u"α" : "$\alpha$",
+        u"β" : "$\beta$"
+        }
+
+def clean(input_string):
+    """
+    Clean a string -- replace all messy unicode with something reasonable, if possible.
+    Also replace some unicode characters with the LaTeX eQuIvAlEnT
+        (e.g.  δ -> $\delta$)
+
+    Args:
+        input_string (string): The text to clean up
+
+    Returns: Cleaned string.
+    """
+    cleaned_string = u''
+    cleaned_string = input_string.replace('&#x0301','') #ACUTE ACCENT MARK
+    cleaned_string = cleaned_string.replace('&#x0308','') #UMLAUT
+    cleaned_string = cleaned_string.replace('&','\&') #AMPERSAND
+    cleaned_string = cleaned_string .replace('&#x2013','')
+    cleaned_string = cleaned_string.replace('"','')
+    cleaned_string = cleaned_string.replace('#','\#')
+    cleaned_string = cleaned_string.replace('$', '\$')
+    for uni, tex in REPLACEMENT_MAP.iteritems():
+        cleaned_string = cleaned_string.replace(uni, tex)
+
+#    if '$' in title:
+#        title = title.split('.')
+#        title=title[0]
+#        title=title.replace('$','')
+
+    return cleaned_string
+
 
 #EXCLUSION OF BAD DOCUMENTS - INDICES, ABSTRACTS, BIBLIOGRAPHIES
 bad_docs=[]
@@ -56,18 +91,10 @@ bibitems=[hdr]
 
 #LOOP THROUGH EACH BIBITEM
 for item in bib:
+    # TODO: make sure vars are reset
 
     #IMPORTANT VARIABLES TO GATHER
-    docid=[]
-    title=[]
-    journal=[]
     names=[]
-    typ =[]
-    volume=[]
-    year=[]
-    number=[]
-    pages=[]
-    publisher=[]
 
     #DOCUMENT ID
     docid=item['_gddid']
@@ -108,17 +135,13 @@ for item in bib:
     #AUTHORS, WITH FORMATTING FIXES
     if 'author' in item.keys():
         for name in item['author']:
-            name['name']=name['name'].replace('&#x0301','') #ACUTE ACCENT MARK
-            name['name']=name['name'].replace('&#x0308','') #UMLAUT
-            name['name']=name['name'].replace('&','\&') #AMPERSAND
-            names.append(name['name'])
+            names.append(clean(name['name']))
     else:
         names=''
 
     #PUBLISHER, WITH FORMATTING FIXES
     if 'publisher' in item.keys():
-        publisher=item['publisher']
-        publisher=publisher.replace('&#x0301','') #ACUTE ACCENT MARK
+        publisher = clean(item['publisher'])
     else:
         publisher=''
 
@@ -130,39 +153,10 @@ for item in bib:
 
     #### TITLE FIXES
     #QUOTATION MARKS
-    if '"' in title:
-        title=title.replace('"','')
-
-    #DOLLAR SIGNS
-    if '$' in title:
-        title = title.split('.')
-        title=title[0]
-        title=title.replace('$','')
-        weird_titles.append(docid)
-
-    #ACCUTE ACCENTS
-    if '&#x0301' in title:
-        title=title.replace('&#x0301','')
-        weird_titles.append(docid)
-
-    #POUND SIGNS
-    if '#' in title:
-        title=title.replace('#','\#')
-        weird_titles.append(docid)
-
-    #AMPERSANDS
-    if '&' in title:
-        title=title.replace('&','\&')
-        weird_titles.append(docid)
+    title = clean(title)
 
     #### JOURNAL NAME
-    #WHATEVER THIS IS IS
-    if '&#x2013;' in journal:
-        journal=journal.replace('&#x2013','')
-
-    #AMPERSANDS
-    if '&' in journal:
-        journal=journal.replace('&','\&')
+    journal = clean(journal)
 
     #### ALL CAPITAL FIXES FOR TITLE, JOURNAL AND AUTHORS
     if title.isupper():
@@ -181,11 +175,11 @@ for item in bib:
         bibtemp='@' + typ + '{' + docid + ',\n' + \
                 'title={{' + title + '}},\n'  + \
                 'author={' + ' and '.join(names) + '},\n' + \
-                'year={' + year +'},\n'+\
                 'journal={' + journal +'},\n'+\
-                'volume={' + str(volume) + '},\n'+\
+                'volume={' + volume + '},\n'+\
+                'year={' + year +'},\n'+\
                 'number={' + str(number) + '},\n'+\
-                'pages={' + str(pages) + '}\n}'
+                'pages={' + pages + '}\n}'
 
     #IF ITS ACTUALLY A TECHNICAL REPORT
     else:
