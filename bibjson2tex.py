@@ -189,6 +189,15 @@ for item in bib:
         publisher = clean(item['publisher'])
     else:
         publisher=''
+        
+    #URL LINK
+    if 'link' in item.keys():
+        if 'url' in item['link'][0]:
+            link=item['link'][0]['url']
+        else:
+            link=''
+    else:
+        link=''
 
     #LIST OF DOCUMENTS WITHOUT YEARS
     if year=='':
@@ -280,7 +289,7 @@ for item in bib:
             name_tmp=''
 
         #### FORMAT TITLE FOR BBL
-        if title != '':
+        if title != '' and link=='':
             #SOME TITLES DO NOT HAVE PERIODS AT THE END
             if title[-1]!='.':
                 title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
@@ -288,6 +297,16 @@ for item in bib:
             #OTHERS DO
             else:
                 title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
+                
+        if title != '' and link!='':
+            #SOME TITLES DO NOT HAVE PERIODS AT THE END
+            if title[-1]!='.':
+                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
+            
+            #OTHERS DO
+            else:
+                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
+
 
         #### FORMATING JOURNAL NAME, VOLUME, PAGES IF VALID ARTICLE
         if publisher!='USGS':
@@ -341,6 +360,9 @@ references='\\documentclass[12pt]{article}\n' +\
     '\\textheight 21cm\n' +\
     '\\footskip 1.0cm\n' +\
     '\\usepackage[utf8x]{inputenc}\n'+\
+    '\\usepackage{hyperref}\n'+\
+    '\\hypersetup{colorlinks=false,pdfborder={0 0 0}}\n'+\
+    '\\usepackage[usenames]{color}\n'+\
     '\\begin{document}\n' +\
     '\\input{cite.bbl}\n'+\
     '\\end{document}\n'
