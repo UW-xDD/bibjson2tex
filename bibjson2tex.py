@@ -295,8 +295,8 @@ for item in bib:
 
         #### FORMAT TITLE FOR BBL
         if title != '' and link=='':
-            #SOME TITLES DO NOT HAVE PERIODS AT THE END
-            if title[-1]!='.':
+            #SOME TITLES DO NOT HAVE PERIODS OR QUESTION MARKS AT THE END
+            if title[-1]!='.' and  title[-1]!='?':
                 title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
 
             #OTHERS DO
@@ -304,8 +304,8 @@ for item in bib:
                 title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
 
         if title != '' and link!='':
-            #SOME TITLES DO NOT HAVE PERIODS AT THE END
-            if title[-1]!='.':
+            #SOME TITLES DO NOT HAVE PERIODS OR QUESTION MARKS AT THE END
+            if title[-1]!='.' and  title[-1]!='?':
                 title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
 
             #OTHERS DO
