@@ -12,54 +12,54 @@ import os
 from csv import reader
 
 REPLACEMENT_MAP = {
-        "Α" : "$\Alpha$",
-        "Β" : "$\Beta$",
-        "Γ" : "$\Gamma$",
-        "Δ" : "$\Delta$",
-        "Ε" : "$\Epsilon$",
-        "Ζ" : "$\Zeta$",
-        "Η" : "$\Eta$",
-        "Θ" : "$\Theta$",
-        "Ι" : "$\Iota$",
-        "Κ" : "$\Kappa$",
-        "Λ" : "$\Lambda$",
-        "Μ" : "$\Mu$",
-        "Ν" : "$\Nu$",
-        "Ξ" : "$\Xi$",
-        "Ο" : "$\Omicron$",
-        "Π" : "$\Pi$",
-        "Ρ" : "$\Rho$",
-        "Σ" : "$\Sigma$",
-        "Τ" : "$\Tau$",
-        "Υ" : "$\Upsilon$",
-        "Φ" : "$\Phi$",
-        "Χ" : "$\Chi$",
-        "Ψ" : "$\Psi$",
-        "Ω" : "$\Omega$",
-        "α" : "$\\alpha$",
-        "β" : "$\beta$",
-        "γ" : "$\\gamma$",
-        "δ" : "$\delta$",
-        "ε" : "$\epsilon$",
-        "ζ" : "$\zeta$",
-        "η" : "$\eta$",
-        "θ" : "$\\theta$",
-        "ι" : "$\iota$",
-        "κ" : "$\kappa$",
-        "λ" : "$\lambda$",
-        "μ" : "$\mu$",
-        "ν" : "$\\nu$",
-        "ξ" : "$\\xi$",
-        "ο" : "$\omicron$",
-        "π" : "$\pi$",
-        "ρ" : "$\\rho$",
-        "σ" : "$\sigma$",
-        "τ" : "$\\tau$",
-        "υ" : "$\upsilon$",
-        "φ" : "$\phi$",
-        "χ" : "$\chi$",
-        "ψ" : "$\psi$",
-        "ω" : "$\omega$"
+        u"Α" : "A",
+        u"Β" : "B",
+        u"Γ" : "$\Gamma$",
+        u"Δ" : "$\Delta$",
+        u"Ε" : "E",
+        u"Ζ" : "Z",
+        u"Η" : "H",
+        u"Θ" : "$\Theta$",
+        u"Ι" : "I",
+        u"Κ" : "K",
+        u"Λ" : "$\Lambda$",
+        u"Μ" : "M",
+        u"Ν" : "N",
+        u"Ξ" : "$\Xi$",
+        u"Ο" : "O",
+        u"Π" : "$\Pi$",
+        u"Ρ" : "P",
+        u"Σ" : "$\Sigma$",
+        u"Τ" : "T",
+        u"Υ" : "$\Upsilon$",
+        u"Φ" : "$\Phi$",
+        u"Χ" : "X",
+        u"Ψ" : "$\Psi$",
+        u"Ω" : "$\Omega$",
+        u"α" : "$\\alpha$",
+        u"β" : "$\beta$",
+        u"γ" : "$\\gamma$",
+        u"δ" : "$\delta$",
+        u"ε" : "$\epsilon$",
+        u"ζ" : "$\zeta$",
+        u"η" : "$\eta$",
+        u"θ" : "$\\theta$",
+        u"ι" : "$\iota$",
+        u"κ" : "$\kappa$",
+        u"λ" : "$\lambda$",
+        u"μ" : "$\mu$",
+        u"ν" : "$\\nu$",
+        u"ξ" : "$\\xi$",
+        u"ο" : "o",
+        u"π" : "$\pi$",
+        u"ρ" : "$\\rho$",
+        u"σ" : "$\sigma$",
+        u"τ" : "$\\tau$",
+        u"υ" : "$\upsilon$",
+        u"φ" : "$\phi$",
+        u"χ" : "$\chi$",
+        u"ψ" : "$\psi$",
+        u"ω" : "$\omega$"
         }
 
 def clean(input_string):
@@ -189,7 +189,7 @@ for item in bib:
         publisher = clean(item['publisher'])
     else:
         publisher=''
-        
+
     #URL LINK
     if 'link' in item.keys():
         if 'url' in item['link'][0]:
@@ -297,12 +297,12 @@ for item in bib:
             #OTHERS DO
             else:
                 title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
-                
+
         if title != '' and link!='':
             #SOME TITLES DO NOT HAVE PERIODS AT THE END
             if title[-1]!='.':
                 title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
-            
+
             #OTHERS DO
             else:
                 title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
