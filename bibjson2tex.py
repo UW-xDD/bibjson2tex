@@ -1,16 +1,23 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 """
-Created on Mon May 30 09:47:43 2016
+File: bibjson2tex.py
+Author: Jon Husson
+Description: Converts a bibjson (http://okfnlabs.org/bibjson/) specified file
+    into LaTeX .bib file. Also provides cite.bbl and references.tex file to convert the documents
+    within the bibjson file into a PDF for ease of previewing.
+Assumes: Valid bibjson input. If no filepath is specified as the first argument,
+    it is assumed that the bibjson file is saved as ./data/bibjson.
+Creates: ./output/bibtk.bib, ./output/cite.bbl, ./output/references.tex
+Usage: bibjson2tex.py [bibjson]
+"""
 
-@author: jhusson
-"""
-################ IMPORT MODULES AND DEFINE FUNCTIONS
+import os, sys
 import json
 import string
 import codecs
-import os
-from csv import reader
 
+# map of unicode characters to their LaTeX equivalents
 REPLACEMENT_MAP = {
         u"Α" : "A",
         u"Β" : "B",
@@ -84,173 +91,138 @@ def clean(input_string):
     for uni, tex in REPLACEMENT_MAP.iteritems():
         cleaned_string = cleaned_string.replace(uni, tex)
 
-#    if '$' in title:
-#        title = title.split('.')
-#        title=title[0]
-#        title=title.replace('$','')
-
     return cleaned_string
 
+def main():
+    if not os.path.isdir("./output/"):
+        os.makedirs("./output/")
 
-#EXCLUSION OF BAD DOCUMENTS - INDICES, ABSTRACTS, BIBLIOGRAPHIES
-bad_docs=[]
-#with open('/Users/jhusson/Box Sync/postdoc/deepdive/stroms/bad_docs/bad_docs.csv','r') as fid:
-#    bd = reader(fid)
-#    for r in bd:
-#        bad_docs.append(r[0])
-#
-#bad_docs=bad_docs[1:]
-#bad_docs = tuple([str(a) for a in bad_docs])
-
-if not os.path.isdir("./output/"):
-    os.makedirs("./output/")
-
-#LOAD IN BIBJSON FILE
-#/Users/jhusson/Box Sync/postdoc/deepdive/stroms/bib/data/bibjson
-#/Users/jhusson/Box Sync/postdoc/deepdive/stroms/bib/data/final_bib
-
-with open('./data/bibjson') as fid:
-    bib=json.load(fid)
-
-
-#SOME USEFUL LISTS TO GROW
-weird_titles=[]
-no_year=[]
-
-#LIST FOR MAKING BIBDESK BIBLIOGRAPHY
-biblist=[]
-
-#HEADER FOR BBL BIBLIOGRAPHY
-hdr='\\begin{thebibliography}{1000}\n' +\
-    '\\expandafter\\ifx\\csname url\\endcsname\\relax\n' +\
-    '\\def\\url#1{\\texttt{#1}}\\fi\n' +\
-    '\\expandafter\\ifx\\csname urlprefix\\endcsname\\relax\\def\\urlprefix{URL }\\fi\n' +\
-    '\\providecommand{\\bibinfo}[2]{#2}\n' +\
-    '\\providecommand{\\eprint}[2][]{\\url{#2}}\n'
-
-#FOOTER FOR BBL BIBLIOGRAPHY
-ftr='\\end{thebibliography}\n'
-
-#LIST FOR MAKING BBL BIBLIOGRAPHY
-bibitems=[hdr]
-
-#LOOP THROUGH EACH BIBITEM
-for item in bib:
-    # TODO: make sure vars are reset
-
-    #IMPORTANT VARIABLES TO GATHER
-    names=[]
-
-    #DOCUMENT ID
-    docid=item['_gddid']
-
-    #TITLE
-    title=item['title']
-
-    #JOURNAL
-    journal=item['journal']['name']
-
-    #TYPE OF DOCUMENT
-    typ=item['type']
-
-    #VOLUME NUMBER
-    if 'volume' in item.keys():
-        volume=item['volume']
+    if len(sys.argv) > 1:
+        input_path = sys.argv[1]
     else:
-        volume=''
+        input_path = './data/bibjson'
+    if not os.path.exists(input_path):
+        print "Could not find bibjson file! Exiting."
+        sys.exit(1)
+    with open(input_path) as fid:
+        bib = json.load(fid)
 
-    #NUMBER ISSUE
-    if 'number' in item.keys():
-        number=item['number']
-    else:
-        number=''
+    #list for making bibdesk bibliography
+    biblist=[]
 
-    #PAGES
-    if 'pages' in item.keys():
-        pages=item['pages']
-    else:
-        pages=''
+    # header + footer for bbl bibliography
+    hdr='\\begin{thebibliography}{1000}\n' +\
+        '\\expandafter\\ifx\\csname url\\endcsname\\relax\n' +\
+        '\\def\\url#1{\\texttt{#1}}\\fi\n' +\
+        '\\expandafter\\ifx\\csname urlprefix\\endcsname\\relax\\def\\urlprefix{URL }\\fi\n' +\
+        '\\providecommand{\\bibinfo}[2]{#2}\n' +\
+        '\\providecommand{\\eprint}[2][]{\\url{#2}}\n'
+    ftr='\\end{thebibliography}\n'
 
-    #PUBLICATION YEAR
-    if 'year' in item.keys():
-        year=item['year']
-    else:
-        year=''
+    # list for making bbl bibliography
+    bibitems=[hdr]
 
-    #AUTHORS, WITH FORMATTING FIXES
-    if 'author' in item.keys():
-        for name in item['author']:
-            names.append(clean(name['name']))
-    else:
-        names=''
+    # loop through each bibitem
 
-    #PUBLISHER, WITH FORMATTING FIXES
-    if 'publisher' in item.keys():
-        publisher = clean(item['publisher'])
-    else:
-        publisher=''
+    for item in bib:
+        # TODO: make sure vars are reset
 
-    #URL LINK
-    if 'link' in item.keys():
-        if 'url' in item['link'][0]:
-            link=item['link'][0]['url']
+        #IMPORTANT VARIABLES TO GATHER
+
+        names=[]
+
+        # document id
+        docid=item['_gddid']
+
+        # title
+        title=item['title']
+
+        # journal
+        journal=item['journal']['name']
+
+        # type of document
+        typ=item['type']
+
+        # volume number
+        if 'volume' in item.keys():
+            volume=item['volume']
+        else:
+            volume=''
+
+        # number issue
+        if 'number' in item.keys():
+            number=item['number']
+        else:
+            number=''
+
+        # pages
+        if 'pages' in item.keys():
+            pages=item['pages']
+        else:
+            pages=''
+
+        # publication year
+        if 'year' in item.keys():
+            year=item['year']
+        else:
+            year=''
+
+        # authors, with formatting fixes
+        if 'author' in item.keys():
+            for name in item['author']:
+                names.append(clean(name['name']))
+        else:
+            names=''
+
+        # publisher, with formatting fixes
+        if 'publisher' in item.keys():
+            publisher = clean(item['publisher'])
+        else:
+            publisher=''
+
+        # url link
+        if 'link' in item.keys():
+            if 'url' in item['link'][0]:
+                link=item['link'][0]['url']
+            else:
+                link=''
         else:
             link=''
-    else:
-        link=''
 
-    #LIST OF DOCUMENTS WITHOUT YEARS
-    if year=='':
-        no_year.append(docid)
+        # clean up the text fields
+        title = clean(title)
+        if title.isupper():
+            title=string.capwords(title)
 
-    ######## SOME HACKY SOLUTIONS AND A PILE OF EDGE CASES
+        journal = clean(journal)
+        if journal.isupper():
+            journal=string.capwords(journal)
 
-    #### TITLE FIXES
-    #QUOTATION MARKS
-    title = clean(title)
+        for i,a in enumerate(names):
+            if a.isupper():
+                names[i] = string.capwords(names[i])
 
-    #### JOURNAL NAME
-    journal = clean(journal)
-
-    #### ALL CAPITAL FIXES FOR TITLE, JOURNAL AND AUTHORS
-    if title.isupper():
-        title=string.capwords(title)
-
-    if journal.isupper():
-        journal=string.capwords(journal)
-
-    for i,a in enumerate(names):
-        if a.isupper():
-            names[i] = string.capwords(names[i])
-
-    #### FORMAT FOR BIBDESK/BIBTEX
-    #IF THE TYPE IS TRULY 'ARTICLE'
-    if publisher!='USGS':
-        bibtemp='@' + typ + '{' + docid + ',\n' + \
+        if publisher!='USGS': # Assume all non-USGS documents are articles
+            bibtemp='@' + typ + '{' + docid + ',\n' + \
+                    'title={{' + title + '}},\n'  + \
+                    'author={' + ' and '.join(names) + '},\n' + \
+                    'journal={' + journal +'},\n'+\
+                    'volume={' + volume + '},\n'+\
+                    'year={' + year +'},\n'+\
+                    'number={' + str(number) + '},\n'+\
+                    'pages={' + pages + '}\n}'
+        else: # assume that all USGS documents are tech reports
+            bibtemp='@techreport{' + docid + ',\n' + \
                 'title={{' + title + '}},\n'  + \
                 'author={' + ' and '.join(names) + '},\n' + \
-                'journal={' + journal +'},\n'+\
-                'volume={' + volume + '},\n'+\
                 'year={' + year +'},\n'+\
-                'number={' + str(number) + '},\n'+\
-                'pages={' + pages + '}\n}'
+                'institution={' + publisher + '},\n'+\
+                'booktitle={' + publisher + ', ' + journal + '}\n}'
 
-    #IF ITS ACTUALLY A TECHNICAL REPORT
-    else:
-        bibtemp='@techreport{' + docid + ',\n' + \
-            'title={{' + title + '}},\n'  + \
-            'author={' + ' and '.join(names) + '},\n' + \
-            'year={' + year +'},\n'+\
-            'institution={' + publisher + '},\n'+\
-            'booktitle={' + publisher + ', ' + journal + '}\n}'
-
-
-    #GROW THE BIBLIOGRAPHY LIST (ONLY IF NOT FLAGGED FOR BADNESS)
-    if docid not in bad_docs:
-        #### LIST FOR BIBDESK/BIBTEX
+        # grow the bibliography list
         biblist.append(bibtemp)
 
-        #### INITIATIZE VARIABLES FOR BBL BIBLIOGRAPHY
+        #### initiatize variables for bbl bibliography
         cite_tmp='\\bibitem{'+docid+'}\n'
         name_tmp=[]
         title_tmp=''
@@ -259,114 +231,102 @@ for item in bib:
         pages_tmp=''
         inst_tmp=''
 
-        #### FORMAT AUTHOR NAMES FOR BBL
+        #### format author names for bbl
         if names !=[''] and names!='' and names:
             for n in names:
                 if n!='':
-                    #FORMATTING IF AUTHOR WRITTEN AS 'SHAW, C.A.'
+                    # formatting if author written as 'Shaw, C.A.'
                     if ',' in n and n[-1]!=',':
                         tmp=n.split(',')
                         tmp[-1]=tmp[-1].replace(' ','')
                         name_tmp.append('\\bibinfo{author}{' + tmp[0] + ', ' + tmp[-1][0] + '.}, ')
-
-                    #FORMATTING IF AUTHOR WRITTEN AS 'CHARLES SHAW'
+                    # formatting if author written as 'Charles Shaw'
                     else:
                         tmp=n.split(' ')
                         name_tmp.append('\\bibinfo{author}{' + tmp[-1] + ', ' + tmp[0][0] + '.}, ')
 
-            #NO COMMA NEEDED AFTER LAST AUTHOR
+            # no comma needed after last author
             name_tmp[-1]=name_tmp[-1][0:-2] + '\n'
 
-            #IF MORE THAN ONE AUTHOR, SEPARATE LAST AUTHOR FROM REST WITH AMPERSAND
+            # if more than one author, separate last author from rest with ampersand
             if len(name_tmp)>1:
                 name_tmp[-2]=name_tmp[-2][0:-2] + ' \& '
 
-            #JOIN FORMATTED AUTHORS INTO ONE STRING
+            # join formatted authors into one string
             name_tmp = ''.join(name_tmp)
-
-        #IF NO AUTHORS FOUND, DEFINE AS EMPTY STRING
-        else:
+        else: #if no authors found, define as empty string
             name_tmp=''
 
-        #### FORMAT TITLE FOR BBL
+        #### format title for bbl
         if title != '' and link=='':
-            #SOME TITLES DO NOT HAVE PERIODS AT THE END
-            if title[-1]!='.':
-                title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
+            if link == '': # if no link included, create normal title
+                # some titles do not have periods at the end
+                if title[-1] != '.':
+                    title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
+                # others do
+                else:
+                    title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
+            elif link != '': # if link is included, make the title a link to the document.
+                # some titles do not have periods at the end
+                if title[-1]!='.':
+                    title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
+                # others do
+                else:
+                    title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
 
-            #OTHERS DO
-            else:
-                title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
-
-        if title != '' and link!='':
-            #SOME TITLES DO NOT HAVE PERIODS AT THE END
-            if title[-1]!='.':
-                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
-
-            #OTHERS DO
-            else:
-                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
-
-
-        #### FORMATING JOURNAL NAME, VOLUME, PAGES IF VALID ARTICLE
-        if publisher!='USGS':
-            if journal !='':
+        #### formating journal name, volume, pages if valid article
+        if publisher != 'USGS':
+            if journal != '':
                 journal_tmp = '\\newblock \\emph{\\bibinfo{journal}{' + journal + '}}\n'
-
-            if volume!='':
+            if volume != '':
                 volume_tmp = '\\textbf{\\bibinfo{volume}{'+volume +'}}\n'
-
-            #IF BOTH PAGES AND VOLUME ARE PRESENT
-            if pages !='' and volume_tmp!='':
+            if pages !='' and volume_tmp!='': # if both pages and volume are present
                 volume_tmp = volume_tmp[0:-1] + ', '
                 pages_tmp = '\\bibinfo{pages}{' + pages + '}\n'
-
-            #IF BOTH PAGES ARE PRESENT, BUT NOT VOLUME
-            elif pages!='' and volume_tmp=='':
-                #REQUIRES SLIGHT CHANGE TO JOURNAL NAME
+            elif pages!='' and volume_tmp=='': # if both pages are present, but not volume
+                #requires slight change to journal name
                 journal_tmp = '\\newblock \\emph{\\bibinfo{journal}{' + journal + ', }}\n'
                 pages_tmp = '\\bibinfo{pages}{' + pages + '}\n'
-
-        #IF USGS IS PUBLISHER, FORMAT AS TECHNICAL REPORT
-        else:
+        else: # if USGS is publisher, format as technical report
             journal_tmp=''
             volume_tmp=''
             pages_tmp=''
             inst_tmp='\\newblock \\bibinfo{type}{Tech. Rep.}, \\bibinfo{institution}{' + publisher + '} '
 
-        #### FORMATTING THE YEAR
+        #### formatting the year
         if year != '':
             year_tmp = '(\\bibinfo{year}{' + year +'})\n'
 
-        #LIST FOR BBL
+        # list for bbl
         bibitems.append(''.join([cite_tmp,name_tmp,title_tmp,journal_tmp,volume_tmp,pages_tmp,inst_tmp,year_tmp,'\n']))
 
-#ADD FOOTER AT VERY BOTTOM
-bibitems.append(ftr)
+    # add footer at very bottom
+    bibitems.append(ftr)
 
-#PRINT THE BIBTEX STRING
-with codecs.open('./output/bibtk.bib', 'wb', 'utf-8') as f1:
-    f1.write('\n'.join(biblist))
+    # print the bibtex string
+    with codecs.open('./output/bibtk.bib', 'wb', 'utf-8') as f1:
+        f1.write('\n'.join(biblist))
 
-#PRINT THE BBL STRING
-with codecs.open('./output/cite.bbl', 'wb', 'utf-8') as f2:
-    f2.write(''.join(bibitems))
+    # print the bbl string
+    with codecs.open('./output/cite.bbl', 'wb', 'utf-8') as f2:
+        f2.write(''.join(bibitems))
 
-#MAKE A SIMPLE TEX FILE TO INPUT BBL
-references='\\documentclass[12pt]{article}\n' +\
-    '\\topmargin 0.0cm\n' +\
-    '\\oddsidemargin 0.2cm\n' +\
-    '\\textwidth 16cm\n' +\
-    '\\textheight 21cm\n' +\
-    '\\footskip 1.0cm\n' +\
-    '\\usepackage[utf8x]{inputenc}\n'+\
-    '\\usepackage{hyperref}\n'+\
-    '\\hypersetup{colorlinks=false,pdfborder={0 0 0}}\n'+\
-    '\\usepackage[usenames]{color}\n'+\
-    '\\begin{document}\n' +\
-    '\\input{cite.bbl}\n'+\
-    '\\end{document}\n'
+    # make a simple tex file to input bbl
+    references='\\documentclass[12pt]{article}\n' +\
+        '\\topmargin 0.0cm\n' +\
+        '\\oddsidemargin 0.2cm\n' +\
+        '\\textwidth 16cm\n' +\
+        '\\textheight 21cm\n' +\
+        '\\footskip 1.0cm\n' +\
+        '\\usepackage[utf8x]{inputenc}\n'+\
+        '\\usepackage{hyperref}\n'+\
+        '\\hypersetup{colorlinks=false,pdfborder={0 0 0}}\n'+\
+        '\\usepackage[usenames]{color}\n'+\
+        '\\begin{document}\n' +\
+        '\\input{cite.bbl}\n'+\
+        '\\end{document}\n'
+    with open('./output/references.tex', 'wb') as f3:
+        f3.write(references)
 
-with open('./output/references.tex', 'wb') as f3:
-    f3.write(references)
-
+if __name__ == '__main__':
+    main()
