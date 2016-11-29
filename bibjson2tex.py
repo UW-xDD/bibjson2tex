@@ -83,11 +83,16 @@ def clean(input_string):
     cleaned_string = u''
     cleaned_string = input_string.replace('&#x0301','') #ACUTE ACCENT MARK
     cleaned_string = cleaned_string.replace('&#x0308','') #UMLAUT
+    cleaned_string = cleaned_string .replace('&#x2013;','-') #DASH
     cleaned_string = cleaned_string.replace('&','\&') #AMPERSAND
-    cleaned_string = cleaned_string .replace('&#x2013','')
     cleaned_string = cleaned_string.replace('"','')
     cleaned_string = cleaned_string.replace('#','\#')
     cleaned_string = cleaned_string.replace('$', '\$')
+    cleaned_string = cleaned_string.replace(u'\xe2\x80\x93', '-') #DASH
+    cleaned_string = cleaned_string.replace(u'\ue5f8', '-') #DASH
+    cleaned_string = cleaned_string.replace(u'\x96', '-') #DASH
+    cleaned_string = cleaned_string.replace(u'\xc3\x81', "\\'A") #UPPER TILDA 'A'
+
     for uni, tex in REPLACEMENT_MAP.iteritems():
         cleaned_string = cleaned_string.replace(uni, tex)
 
@@ -260,15 +265,15 @@ def main():
         #### format title for bbl
         if title != '' and link=='':
             if link == '': # if no link included, create normal title
-                # some titles do not have periods at the end
-                if title[-1] != '.':
+                # some titles do not have periods or question marks at the end
+                if title[-1] != '.' and title[-1] != '?':
                     title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
                 # others do
                 else:
                     title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
             elif link != '': # if link is included, make the title a link to the document.
-                # some titles do not have periods at the end
-                if title[-1]!='.':
+                # some titles do not have periods or question marks at the end
+                if title[-1]!='.'  and  title[-1] != '?':
                     title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
                 # others do
                 else:
