@@ -66,7 +66,8 @@ REPLACEMENT_MAP = {
         u"φ" : "$\phi$",
         u"χ" : "$\chi$",
         u"ψ" : "$\psi$",
-        u"ω" : "$\omega$"
+        u"ω" : "$\omega$",
+        "%" : "\%"
         }
 
 def clean(input_string):
@@ -263,21 +264,22 @@ def main():
             name_tmp=''
 
         #### format title for bbl
-        if title != '' and link=='':
-            if link == '': # if no link included, create normal title
-                # some titles do not have periods or question marks at the end
-                if title[-1] != '.' and title[-1] != '?':
-                    title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
-                # others do
-                else:
-                    title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
-            elif link != '': # if link is included, make the title a link to the document.
-                # some titles do not have periods or question marks at the end
-                if title[-1]!='.'  and  title[-1] != '?':
-                    title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
-                # others do
-                else:
-                    title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
+
+
+        if link == '': # if no link included, create normal title
+            # some titles do not have periods or question marks at the end
+            if title[-1] != '.' and title[-1] != '?':
+                title_tmp = '\\newblock \\bibinfo{title}{' + title + '.}\n'
+            # others do
+            else:
+                title_tmp = '\\newblock \\bibinfo{title}{' + title + '}\n'
+        elif link != '': # if link is included, make the title a link to the document.
+            # some titles do not have periods or question marks at the end
+            if title[-1]!='.'  and  title[-1] != '?':
+                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '.}}}\n'
+            # others do
+            else:
+                title_tmp = '\\newblock \\bibinfo{title}{\\href{' + link + '}{{\color{blue}' + title + '}}}\n'
 
         #### formating journal name, volume, pages if valid article
         if publisher != 'USGS':
