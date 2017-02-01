@@ -16,6 +16,7 @@ import os, sys
 import json
 import string
 import codecs
+import numpy as np
 
 # map of unicode characters to their LaTeX equivalents
 REPLACEMENT_MAP = {
@@ -334,6 +335,85 @@ def main():
         '\\end{document}\n'
     with open('./output/references.tex', 'wb') as f3:
         f3.write(references)
-
+        
+    #SUMMARIZE PUBLISHERS AND JOURNALS IN THIS BIBJSON
+    all_publishers=np.array([clean(a['publisher']) for a in bib])
+    all_journals=np.array([clean(a['journal']['name']) for a in bib])
+    
+    #UNIQUE PUBLISHERS AND NUMBER OF OCCURENCES
+    u,counts=np.unique(all_publishers,return_counts=True)
+    
+    #MAKE A STRUCTURED ARRAY
+    pub_table=np.zeros(len(u),dtype={'names':['name','count'],'formats':[u.dtype,'i4']})
+    pub_table['name']=u
+    pub_table['count']=counts
+    
+    #SORT BY NUMBER OF OCCURENCES
+    pub_table=np.flipud(np.sort(pub_table,order='count'))
+    
+    #UNIQUE JOURNALS AND NUMBER OF OCCURENCES
+    u,counts=np.unique(all_journals,return_counts=True)
+    
+    #MAKE A STRUCTURED ARRAY
+    journal_table=np.zeros(len(u),dtype={'names':['name','count'],'formats':[u.dtype,'i4']})
+    journal_table['name']=u
+    journal_table['count']=counts
+    
+    #SORT BY NUMBER OF OCCURENCES
+    journal_table=np.flipud(np.sort(journal_table,order='count'))
+    
+    #INITIATE A LATEX TABLE FOR PUBLISHERS SUMMARY
+    latex_pub='\\begin{center} \n' +\
+                '\\begin{longtable}{|l|r|} \\hline \n' +\
+                '\\multicolumn{2}{|c|}{\\textbf{Publisher Totals}}\\\ \hline\n' +\
+                'name&number references\\\ \hline\n'
+    
+    #LOOP THROUGH PUBLISHER SUMMARY AND APPEND TO LATEX STRING AS NEW ROW
+    for p in pub_table:
+        latex_pub=latex_pub+ p['name']+'&'+str(p['count'])+'\\\ \n'
+    
+    #END THE PUBLISHER TABLE
+    latex_pub=latex_pub+'\hline\end{longtable}\n'+\
+                '\end{center}'
+    
+    #INITIATE A LATEX TABLE FOR JOURNALS SUMMARY
+    latex_journal='\\begin{center} \n' +\
+                '\\begin{longtable}{|l|r|} \\hline \n' +\
+                '\\multicolumn{2}{|c|}{\\textbf{Journal Totals}}\\\ \hline\n'+\
+                'name&number references\\\ \hline\n'
+    
+    #LOOP THROUGH JOURNALS SUMMARY AND APPEND TO LATEX STRING AS NEW ROW(S)
+    for j in journal_table:
+        #SET MAXIMUM WORD NUMBER PER ROW SO LATEX DOES NOT POOP ITSELF
+        words = j['name'].split()
+        #CHUNKED TITLE; LIST OF <= 5 WORD N-GRAMS
+        subs = [" ".join(words[i:i+5]) for i in range(0, len(words), 5)]
+        
+        #LOOP THROUGH CHUNKS AND APPEND TO STRING
+        for i in range(len(subs)):
+            #FIRST CHUNK GETS THE JOURNAL TOTAL
+            if i==0:
+                latex_journal=latex_journal+ subs[i]+'&'+str(j['count'])+'\\\ \n'
+            #ALL SUBSEQUENT CHUNKS GET INDENTED
+            else:
+                latex_journal=latex_journal+'\\hspace{5mm}' + subs[i]+'&\\\ \n'
+    
+    #END THE JOURNAL TABLE
+    latex_journal=latex_journal+'\hline\end{longtable}\n'+\
+                '\end{center}'
+            
+    #PREAMBLE FOR BOTH TABLES
+    preamble='\\documentclass[12pt]{article}\n'+\
+                '\\usepackage{longtable}\n'+\
+                '\\usepackage[utf8x]{inputenc}\n'+\
+                '\\begin{document}\n'
+              
+    #CONCATENATE THE PREAMBLE, BOTH TABLES, AND END THE LATEX DOCUMENT
+    table=preamble+latex_pub+latex_journal+'\n\\end{document}'
+    
+    #PRINT THE LATEX TABLES
+    with codecs.open('./output/table.tex', 'wb', 'utf-8') as f4:
+        f4.write(table)
+    
 if __name__ == '__main__':
     main()
