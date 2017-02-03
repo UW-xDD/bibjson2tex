@@ -338,7 +338,7 @@ def main():
         
     #SUMMARIZE PUBLISHERS AND JOURNALS IN THIS BIBJSON
     all_publishers=np.array([clean(a['publisher']) for a in bib])
-    all_journals=np.array([clean(a['journal']['name']) for a in bib])
+    all_journals=all_journals=[tuple((clean(a['journal']['name']),clean(a['publisher']))) for a in bib]
     
     #UNIQUE PUBLISHERS AND NUMBER OF OCCURENCES
     u,counts=np.unique(all_publishers,return_counts=True)
@@ -351,13 +351,18 @@ def main():
     #SORT BY NUMBER OF OCCURENCES
     pub_table=np.flipud(np.sort(pub_table,order='count'))
     
-    #UNIQUE JOURNALS AND NUMBER OF OCCURENCES
-    u,counts=np.unique(all_journals,return_counts=True)
-    
+    #COUNT NUMBER OCCURENCES OF JOURNAL-PUBLISHER TUPLES
+    count_map = {}
+    for t in all_journals:
+        count_map[t] = count_map.get(t, 0)  +1
+        
     #MAKE A STRUCTURED ARRAY
-    journal_table=np.zeros(len(u),dtype={'names':['name','count'],'formats':[u.dtype,'i4']})
-    journal_table['name']=u
-    journal_table['count']=counts
+    journal_table=np.zeros(len(count_map),dtype={'names':['name','pub','count'],'formats':[np.array([a[0] for a in count_map.keys()]).dtype,np.array([a[1] for a in count_map.keys()]).dtype,'i4']})
+    
+    for i,j in enumerate(count_map): 
+        journal_table['name'][i]=j[0]
+        journal_table['pub'][i]=j[1]
+        journal_table['count'][i]=count_map[j]
     
     #SORT BY NUMBER OF OCCURENCES
     journal_table=np.flipud(np.sort(journal_table,order='count'))
@@ -377,10 +382,12 @@ def main():
                 '\end{center}'
     
     #INITIATE A LATEX TABLE FOR JOURNALS SUMMARY
-    latex_journal='\\begin{center} \n' +\
-                '\\begin{longtable}{|l|r|} \\hline \n' +\
-                '\\multicolumn{2}{|c|}{\\textbf{Journal Totals}}\\\ \hline\n'+\
-                'name&number references\\\ \hline\n'
+    latex_journal='\\newpage'+\
+                '\\begin{landscape}'+\
+                '\\begin{center} \n' +\
+                '\\begin{longtable}{|l|l|r|} \\hline \n' +\
+                '\\multicolumn{3}{|c|}{\\textbf{Journal Totals}}\\\ \hline\n'+\
+                'name&publisher&number references\\\ \hline\n'
     
     #LOOP THROUGH JOURNALS SUMMARY AND APPEND TO LATEX STRING AS NEW ROW(S)
     for j in journal_table:
@@ -393,19 +400,21 @@ def main():
         for i in range(len(subs)):
             #FIRST CHUNK GETS THE JOURNAL TOTAL
             if i==0:
-                latex_journal=latex_journal+ subs[i]+'&'+str(j['count'])+'\\\ \n'
+                latex_journal=latex_journal+ subs[i]+'&'+j['pub']+'&'+str(j['count'])+'\\\ \n'
             #ALL SUBSEQUENT CHUNKS GET INDENTED
             else:
-                latex_journal=latex_journal+'\\hspace{5mm}' + subs[i]+'&\\\ \n'
+                latex_journal=latex_journal+'\\hspace{5mm}' + subs[i]+'&&\\\ \n'
     
     #END THE JOURNAL TABLE
-    latex_journal=latex_journal+'\hline\end{longtable}\n'+\
-                '\end{center}'
+    latex_journal=latex_journal+'\\hline\\end{longtable}\n'+\
+                '\\end{center}\n'+\
+                '\\end{landscape}'
             
     #PREAMBLE FOR BOTH TABLES
     preamble='\\documentclass[12pt]{article}\n'+\
                 '\\usepackage{longtable}\n'+\
                 '\\usepackage[utf8x]{inputenc}\n'+\
+                '\\usepackage{pdflscape}\n'+\
                 '\\begin{document}\n'
               
     #CONCATENATE THE PREAMBLE, BOTH TABLES, AND END THE LATEX DOCUMENT
